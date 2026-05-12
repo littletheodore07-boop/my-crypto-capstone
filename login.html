@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Flip Game | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background:
+                linear-gradient(rgba(15, 23, 42, 0.84), rgba(2, 6, 23, 0.96)),
+                repeating-linear-gradient(90deg, rgba(148, 163, 184, 0.06) 0, rgba(148, 163, 184, 0.06) 1px, transparent 1px, transparent 72px),
+                repeating-linear-gradient(0deg, rgba(148, 163, 184, 0.045) 0, rgba(148, 163, 184, 0.045) 1px, transparent 1px, transparent 72px),
+                #020617;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <main class="mx-auto grid min-h-screen w-full max-w-7xl items-center gap-8 px-5 py-8 lg:grid-cols-[1.1fr_0.9fr] lg:px-10">
+        <section class="hidden min-h-[660px] flex-col justify-between rounded-lg border border-white/10 bg-slate-900/70 p-10 shadow-2xl shadow-slate-950/50 backdrop-blur lg:flex">
+            <div class="flex items-center gap-3">
+                <div class="grid h-12 w-12 place-items-center rounded-lg bg-emerald-300 text-lg font-black text-slate-950 shadow-lg shadow-emerald-500/20">SS</div>
+                <div>
+                    <p class="text-xl font-black tracking-tight">Coin Flip Game</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.26em] text-emerald-300">Coin Flip Console</p>
+                </div>
+            </div>
+
+            <div class="max-w-2xl">
+                <p class="mb-4 text-sm font-bold uppercase tracking-[0.28em] text-amber-300">Custom Coin Gaming</p>
+                <h1 class="text-6xl font-black leading-[0.95] tracking-tight">Flip fast. Track every play.</h1>
+                <p class="mt-6 max-w-xl text-lg leading-8 text-slate-300">
+                    Sign in to run coin flips, record wallet activity, and review every result from your MySQL ledger.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <div class="rounded-lg border border-white/10 bg-slate-950/70 p-4">
+                    <p class="text-sm text-slate-400">Wallets</p>
+                    <p class="mt-2 text-2xl font-black text-blue-300">Allowed</p>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-slate-950/70 p-4">
+                    <p class="text-sm text-slate-400">Payout</p>
+                    <p class="mt-2 text-2xl font-black text-emerald-300">2x</p>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-slate-950/70 p-4">
+                    <p class="text-sm text-slate-400">Ledger</p>
+                    <p class="mt-2 text-2xl font-black text-amber-300">Live</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="flex justify-center">
+            <div class="w-full max-w-md">
+                <div class="mb-7 lg:hidden">
+                    <div class="mb-5 grid h-12 w-12 place-items-center rounded-lg bg-emerald-300 text-lg font-black text-slate-950">SS</div>
+                    <h1 class="text-3xl font-black tracking-tight">Coin Flip Game</h1>
+                    <p class="mt-2 text-slate-400">Sign in to open the coin flip console.</p>
+                </div>
+
+                <div class="rounded-lg border border-white/10 bg-slate-900/90 p-6 shadow-2xl shadow-slate-950/60 backdrop-blur sm:p-8">
+                    <div class="mb-8">
+                        <p class="text-sm font-bold uppercase tracking-[0.22em] text-emerald-300">Welcome Back</p>
+                        <h2 class="mt-3 text-4xl font-black tracking-tight">Login</h2>
+                        <p class="mt-2 text-sm text-slate-400">Access your dashboard and game history.</p>
+                    </div>
+
+                    <form id="loginForm" class="space-y-5">
+                        <div>
+                            <label for="email" class="mb-2 block text-sm font-semibold text-slate-200">Email address</label>
+                            <input type="email" id="email" required autocomplete="email"
+                                   class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-400/15"
+                                   placeholder="student@bowiestate.edu">
+                        </div>
+
+                        <div>
+                            <label for="password" class="mb-2 block text-sm font-semibold text-slate-200">Password</label>
+                            <input type="password" id="password" required autocomplete="current-password"
+                                   class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-400/15"
+                                   placeholder="Enter your password">
+                        </div>
+
+                        <p id="loginMessage" class="hidden rounded-lg border px-4 py-3 text-sm"></p>
+
+                        <button id="loginButton" type="submit"
+                                class="flex w-full items-center justify-center rounded-lg bg-emerald-300 px-4 py-3 font-black text-slate-950 transition hover:bg-emerald-200 focus:outline-none focus:ring-4 focus:ring-emerald-400/25 disabled:cursor-not-allowed disabled:opacity-60">
+                            Sign in
+                        </button>
+                    </form>
+
+                    <p class="mt-6 text-center text-sm text-slate-400">
+                        Need an account?
+                        <a href="/register" class="font-semibold text-emerald-300 hover:text-emerald-200">Create one</a>
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const message = document.getElementById('loginMessage');
+        const button = document.getElementById('loginButton');
+
+        function showMessage(text, type = 'error') {
+            message.textContent = text;
+            message.className = type === 'success'
+                ? 'rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200'
+                : 'rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200';
+        }
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            button.disabled = true;
+            button.textContent = 'Signing in...';
+            message.className = 'hidden';
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showMessage('Access granted. Opening dashboard...', 'success');
+                    window.location.href = '/dashboard';
+                    return;
+                }
+
+                showMessage(data.error || 'Login failed. Check your email and password.');
+            } catch (err) {
+                console.error('Login Error:', err);
+                showMessage('Cannot connect to the server. Make sure node server.js is running.');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Sign in';
+            }
+        };
+    </script>
+</body>
+</html>

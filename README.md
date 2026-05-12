@@ -1,57 +1,83 @@
-# Sample Hardhat 3 Beta Project (`mocha` and `ethers`)
+# Coin Flip Game
 
-This project showcases a Hardhat 3 Beta project using `mocha` for tests and the `ethers` library for Ethereum interactions.
+This project is a coin flip crypto game. A player chooses heads or tails, sends a crypto wager through MetaMask, and wins a 2x payout if the coin lands on their side. The web app also records users and coin flip history in MySQL for viewing in MySQL Workbench.
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+## Run the Web App
 
-## Project Overview
+Create the database in MySQL Workbench first:
 
-This example project includes:
-
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using `mocha` and ethers.js
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
-
-## Usage
-
-### Running Tests
-
-To run all the tests in the project, execute the following command:
-
-```shell
-npx hardhat test
+```sql
+CREATE DATABASE IF NOT EXISTS coin_flip_game;
 ```
 
-You can also selectively run the Solidity or `mocha` tests:
+Set these database values in `.env`:
 
-```shell
-npx hardhat test solidity
-npx hardhat test mocha
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=coin_flip_game
+DB_USER=root
+DB_PASSWORD=your_mysql_password
 ```
 
-### Make a deployment to Sepolia
-
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
+Then run:
 
 ```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+npm install
+npm start
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+Open:
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
-
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+```text
+http://localhost:3001
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+The app stores registered users in the `Users` table and game history in the `CoinFlips` table. Sequelize creates those tables when the server starts.
+
+## MetaMask Betting Mode
+
+For a class demo, you can leave `CONTRACT_ADDRESS` empty and the site will save wallet-tracked flips to MySQL only.
+
+For real MetaMask ETH wagers, deploy the coin flip contract, put its address in `CONTRACT_ADDRESS`, and make sure `HOUSE_WALLET_ADDRESS` matches the wallet controlled by `PRIVATE_KEY`. Winners are paid from the funded contract.
+
+## Deploy the Coin Flip Contract
+
+Set these values in `.env`:
+
+```env
+API_URL=your_sepolia_rpc_url
+PRIVATE_KEY=your_wallet_private_key
+STARTING_HOUSE_ETH=0.02
+```
+
+Then deploy:
 
 ```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
+npm run deploy
+```
+
+Copy the printed `CONTRACT_ADDRESS=...` line into `.env`.
+
+## Flip From the Terminal
+
+Set optional game values in `.env`:
+
+```env
+COIN_CHOICE=heads
+WAGER_ETH=0.001
+```
+
+Then play:
+
+```shell
+npm run flip
+```
+
+The contract pays `2x` the wager on a win and keeps the wager on a loss.
+
+## Development Checks
+
+```shell
+npm run compile
 ```

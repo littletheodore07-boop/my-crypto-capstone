@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Flip Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background:
+                linear-gradient(rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.98)),
+                repeating-linear-gradient(90deg, rgba(148, 163, 184, 0.055) 0, rgba(148, 163, 184, 0.055) 1px, transparent 1px, transparent 72px),
+                repeating-linear-gradient(0deg, rgba(148, 163, 184, 0.04) 0, rgba(148, 163, 184, 0.04) 1px, transparent 1px, transparent 72px),
+                #020617;
+        }
+
+        @keyframes flipPop {
+            0% { transform: rotateY(0deg) scale(1); }
+            45% { transform: rotateY(540deg) scale(1.08); }
+            100% { transform: rotateY(720deg) scale(1); }
+        }
+
+        .coin-motion {
+            animation: flipPop 0.85s ease both;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <main class="mx-auto grid w-full max-w-7xl gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_390px] lg:px-8">
+        <section class="overflow-hidden rounded-lg border border-white/10 bg-slate-900/80 shadow-2xl shadow-slate-950/60 backdrop-blur">
+            <header class="border-b border-white/10 p-5 sm:p-7">
+                <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <div class="mb-4 flex items-center gap-3">
+                            <div class="grid h-11 w-11 place-items-center rounded-lg bg-emerald-300 font-black text-slate-950 shadow-lg shadow-emerald-500/20">SS</div>
+                            <div>
+                                <p class="text-lg font-black tracking-tight">Coin Flip Game</p>
+                                <p class="text-xs font-bold uppercase tracking-[0.24em] text-emerald-300">Private Coin Room</p>
+                            </div>
+                        </div>
+                        <h1 class="text-4xl font-black tracking-tight sm:text-5xl">Coin Flip Game</h1>
+                        <p class="mt-3 max-w-2xl leading-7 text-slate-400">Wager Sepolia ETH, flip heads or tails, and record every wallet result in MySQL.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <span id="modePill" class="rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-200">Loading</span>
+                        <button onclick="logout()" class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-emerald-300 hover:text-emerald-200">
+                            Log out
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <section class="grid gap-3 border-b border-white/10 p-5 sm:grid-cols-3 sm:p-7">
+                <div class="rounded-lg border border-white/10 bg-slate-950/80 p-4">
+                    <p class="text-sm text-slate-400">Total flips</p>
+                    <p id="totalFlips" class="mt-2 text-3xl font-black text-emerald-300">0</p>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-slate-950/80 p-4">
+                    <p class="text-sm text-slate-400">Wins</p>
+                    <p id="totalWins" class="mt-2 text-3xl font-black text-blue-300">0</p>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-slate-950/80 p-4">
+                    <p class="text-sm text-slate-400">Net payout</p>
+                    <p id="netPayout" class="mt-2 text-3xl font-black text-amber-300">0 ETH</p>
+                </div>
+            </section>
+
+            <section class="grid gap-6 p-5 lg:grid-cols-[0.85fr_1.15fr] sm:p-7">
+                <div class="space-y-5">
+                    <section class="rounded-lg border border-white/10 bg-slate-950/80 p-5">
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-xl font-black">Wallet</h2>
+                                <p class="mt-1 text-sm text-slate-400">Use an allowed wallet for token mode.</p>
+                            </div>
+                            <span id="tokenBadge" class="rounded-lg border border-slate-700 px-3 py-1 text-xs font-bold text-slate-300">ETH</span>
+                        </div>
+
+                        <label for="walletAddress" class="mb-2 block text-sm font-semibold text-slate-200">Wallet ID</label>
+                        <input id="walletAddress" type="text" placeholder="Paste Ethereum wallet address"
+                               class="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 font-mono text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-400/15">
+
+                        <button id="connectWalletBtn" type="button"
+                                class="mt-3 w-full rounded-lg border border-emerald-300 px-4 py-3 text-sm font-black text-emerald-200 transition hover:bg-emerald-300 hover:text-slate-950">
+                            Use connected wallet
+                        </button>
+                        <p id="walletMessage" class="mt-3 text-sm leading-6 text-slate-400">Paste an allowed wallet address, or fill it from MetaMask if the extension is available.</p>
+                    </section>
+
+                    <section class="rounded-lg border border-white/10 bg-slate-950/80 p-5">
+                        <h2 class="text-xl font-black">House Reserve</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-400">Winning payouts come from the house wallet configured on the server.</p>
+                        <p id="houseWalletLabel" class="mt-4 font-mono text-xs text-blue-300">Not configured</p>
+                    </section>
+                </div>
+
+                <form id="flipForm" class="rounded-lg border border-white/10 bg-slate-950/80 p-5">
+                    <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+                        <div class="space-y-5">
+                            <div>
+                                <label for="wagerAmount" class="mb-2 block text-sm font-semibold text-slate-200">Wager amount</label>
+                                <div class="relative">
+                                    <input id="wagerAmount" type="number" min="0.01" step="0.01" required placeholder="25.00"
+                                           class="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-20 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-400/15">
+                                    <span id="tokenUnit" class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">ETH</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="mb-2 block text-sm font-semibold text-slate-200">Pick a side</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="cursor-pointer rounded-lg border border-slate-700 bg-slate-900 p-4 text-center transition has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-300/10">
+                                        <input class="sr-only" type="radio" name="choice" value="heads" checked>
+                                        <span class="block text-xl font-black">Heads</span>
+                                    </label>
+                                    <label class="cursor-pointer rounded-lg border border-slate-700 bg-slate-900 p-4 text-center transition has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-300/10">
+                                        <input class="sr-only" type="radio" name="choice" value="tails">
+                                        <span class="block text-xl font-black">Tails</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button id="flipBtn" type="submit" class="w-full rounded-lg bg-emerald-300 px-4 py-3 font-black text-slate-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60">
+                                Flip coin
+                            </button>
+                        </div>
+
+                        <div class="grid place-items-center rounded-lg border border-slate-800 bg-slate-900 p-6">
+                            <div class="text-center">
+                                <div id="coinFace" class="mx-auto grid h-44 w-44 place-items-center rounded-full border-8 border-amber-200 bg-amber-300 text-6xl font-black text-slate-950 shadow-2xl shadow-amber-500/20">
+                                    ?
+                                </div>
+                                <h2 id="resultTitle" class="mt-6 text-3xl font-black">Ready</h2>
+                        <p id="resultDetails" class="mt-2 text-sm leading-6 text-slate-400">Contract transactions and results are saved to the CoinFlips table.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="flipMessage" class="hidden mt-5 rounded-lg border px-4 py-3 text-sm"></p>
+                </form>
+            </section>
+        </section>
+
+        <aside class="space-y-6">
+            <section class="rounded-lg border border-white/10 bg-slate-900/80 p-5 shadow-2xl shadow-slate-950/50 backdrop-blur">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black">Recent Flips</h2>
+                        <p class="mt-1 text-sm text-slate-400">Latest 50 saved records</p>
+                    </div>
+                    <button id="refreshBtn" type="button" class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-black text-slate-300 transition hover:border-emerald-300 hover:text-emerald-200">
+                        Refresh
+                    </button>
+                </div>
+                <div id="flipHistory" class="mt-4 max-h-[520px] space-y-3 overflow-y-auto pr-1 text-sm"></div>
+            </section>
+
+            <section class="rounded-lg border border-white/10 bg-slate-900/80 p-5 shadow-2xl shadow-slate-950/50 backdrop-blur">
+                <h2 class="text-xl font-black">MySQL Workbench Fields</h2>
+                <div class="mt-4 grid gap-2 text-sm leading-6 text-slate-400">
+                    <p><span class="font-mono text-emerald-300">walletAddress</span> tracks the player.</p>
+                    <p><span class="font-mono text-emerald-300">wagerAmount</span> records Sepolia ETH amount.</p>
+                    <p><span class="font-mono text-emerald-300">wagerTxHash</span> stores the on-chain flip transaction.</p>
+                </div>
+            </section>
+        </aside>
+    </main>
+
+    <script>
+        const coinFlipAbi = [
+            "function flip(bool choiceHeads) payable",
+            "function houseBalance() view returns (uint256)"
+        ];
+        const gameConfig = {
+            enabled: false,
+            contractAddress: null,
+            houseWalletAddress: null,
+            symbol: 'ETH',
+            decimals: 18,
+            houseBalance: '0',
+            allowedWallets: []
+        };
+        const walletInput = document.getElementById('walletAddress');
+        const savedWallet = localStorage.getItem('coinFlipWallet');
+
+        if (savedWallet) {
+            walletInput.value = savedWallet;
+        }
+
+        function shortAddress(address) {
+            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        }
+
+        function coinAmount(value) {
+            return `${Number(value || 0).toFixed(2)} ${gameConfig.symbol}`;
+        }
+
+        function sameAddress(first, second) {
+            return first && second && first.toLowerCase() === second.toLowerCase();
+        }
+
+        function isAllowedWallet(address) {
+            return gameConfig.allowedWallets.length === 0 || gameConfig.allowedWallets.some(allowed => sameAddress(allowed, address));
+        }
+
+        async function loadGameConfig() {
+            const res = await fetch('/api/game-config');
+            if (!res.ok) {
+                throw new Error('Could not load game settings.');
+            }
+
+            const config = await res.json();
+            Object.assign(gameConfig, config);
+            document.getElementById('netPayout').textContent = coinAmount(0);
+            document.getElementById('tokenBadge').textContent = gameConfig.symbol;
+            document.getElementById('tokenUnit').textContent = gameConfig.symbol;
+            document.getElementById('houseWalletLabel').textContent = gameConfig.houseWalletAddress
+                ? shortAddress(gameConfig.houseWalletAddress)
+                : 'Not configured';
+
+            const walletMessage = document.getElementById('walletMessage');
+            const modePill = document.getElementById('modePill');
+            if (gameConfig.enabled) {
+                walletMessage.textContent = `Live ETH mode enabled. House contract balance: ${coinAmount(gameConfig.houseBalance)}.`;
+                walletMessage.className = 'mt-3 text-sm leading-6 text-emerald-300';
+                modePill.textContent = 'ETH Live';
+                modePill.className = 'rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-200';
+            } else {
+                walletMessage.textContent = 'Contract settings are not configured yet, so flips are being tracked only in MySQL.';
+                walletMessage.className = 'mt-3 text-sm leading-6 text-amber-300';
+                modePill.textContent = 'Ledger Only';
+                modePill.className = 'rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-200';
+            }
+        }
+
+        function setMessage(id, text, type = 'error') {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = type === 'success'
+                ? 'mt-5 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200'
+                : 'mt-5 rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200';
+        }
+
+        function clearMessage(id) {
+            const el = document.getElementById(id);
+            el.className = 'hidden';
+            el.textContent = '';
+        }
+
+        function getWalletAddress() {
+            const address = walletInput.value.trim();
+            if (!ethers.utils.isAddress(address)) {
+                throw new Error('Enter a valid Ethereum wallet address.');
+            }
+
+            const checksumAddress = ethers.utils.getAddress(address);
+            walletInput.value = checksumAddress;
+            localStorage.setItem('coinFlipWallet', checksumAddress);
+            return checksumAddress;
+        }
+
+        document.getElementById('connectWalletBtn').onclick = async () => {
+            const walletMessage = document.getElementById('walletMessage');
+
+            try {
+                if (!window.ethereum) {
+                    const pastedAddress = walletInput.value.trim();
+                    if (ethers.utils.isAddress(pastedAddress)) {
+                        const checksumAddress = ethers.utils.getAddress(pastedAddress);
+                        walletInput.value = checksumAddress;
+                        localStorage.setItem('coinFlipWallet', checksumAddress);
+                        walletMessage.textContent = gameConfig.enabled
+                            ? `Wallet set to ${shortAddress(checksumAddress)}. Open this page in a MetaMask-enabled browser to wager ETH.`
+                            : `Wallet set to ${shortAddress(checksumAddress)} for tracking.`;
+                        walletMessage.className = gameConfig.enabled
+                            ? 'mt-3 text-sm leading-6 text-amber-300'
+                            : 'mt-3 text-sm leading-6 text-emerald-300';
+                        return;
+                    }
+
+                    throw new Error('MetaMask is not available in this browser tab. Paste a wallet address, or open this page in Chrome/Edge with the MetaMask extension enabled.');
+                }
+
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send('eth_requestAccounts', []);
+                const signer = provider.getSigner();
+                const address = await signer.getAddress();
+                walletInput.value = address;
+                localStorage.setItem('coinFlipWallet', address);
+                walletMessage.textContent = `Using ${shortAddress(address)} for coin flip tracking.`;
+                walletMessage.className = 'mt-3 text-sm leading-6 text-emerald-300';
+            } catch (err) {
+                walletMessage.textContent = err.message || 'Could not connect wallet.';
+                walletMessage.className = 'mt-3 text-sm leading-6 text-red-300';
+            }
+        };
+
+        walletInput.addEventListener('change', () => {
+            const walletMessage = document.getElementById('walletMessage');
+            const address = walletInput.value.trim();
+
+            if (!address) {
+                localStorage.removeItem('coinFlipWallet');
+                walletMessage.textContent = 'Paste an allowed wallet address, or fill it from MetaMask if the extension is available.';
+                walletMessage.className = 'mt-3 text-sm leading-6 text-slate-400';
+                return;
+            }
+
+            if (!ethers.utils.isAddress(address)) {
+                walletMessage.textContent = 'That is not a valid Ethereum wallet address.';
+                walletMessage.className = 'mt-3 text-sm leading-6 text-red-300';
+                return;
+            }
+
+            const checksumAddress = ethers.utils.getAddress(address);
+            walletInput.value = checksumAddress;
+            localStorage.setItem('coinFlipWallet', checksumAddress);
+            if (!isAllowedWallet(checksumAddress)) {
+                walletMessage.textContent = 'That wallet is valid, but it is not in the allowed wallet list.';
+                walletMessage.className = 'mt-3 text-sm leading-6 text-red-300';
+                return;
+            }
+
+            walletMessage.textContent = `Wallet set to ${shortAddress(checksumAddress)}.`;
+            walletMessage.className = 'mt-3 text-sm leading-6 text-emerald-300';
+        });
+
+        document.getElementById('flipForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const button = document.getElementById('flipBtn');
+            const wagerAmount = document.getElementById('wagerAmount').value;
+            const choice = document.querySelector('input[name="choice"]:checked').value;
+
+            button.disabled = true;
+            button.textContent = 'Flipping...';
+            clearMessage('flipMessage');
+
+            try {
+                const walletAddress = getWalletAddress();
+                if (!isAllowedWallet(walletAddress)) {
+                    throw new Error('This wallet is not allowed to play this demo.');
+                }
+
+                let wagerTxHash = null;
+                if (gameConfig.enabled) {
+                    if (!window.ethereum) {
+                        throw new Error('MetaMask is required to wager ETH.');
+                    }
+
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send('eth_requestAccounts', []);
+                    const signer = provider.getSigner();
+                    const signerAddress = await signer.getAddress();
+
+                    if (!sameAddress(signerAddress, walletAddress)) {
+                        throw new Error(`MetaMask is connected to ${shortAddress(signerAddress)}, but the wallet field has ${shortAddress(walletAddress)}.`);
+                    }
+
+                    const contract = new ethers.Contract(gameConfig.contractAddress, coinFlipAbi, signer);
+                    const wagerWei = ethers.utils.parseEther(String(wagerAmount));
+                    const balance = await provider.getBalance(walletAddress);
+
+                    if (balance.lte(wagerWei)) {
+                        throw new Error('This wallet needs enough Sepolia ETH for the wager and gas.');
+                    }
+
+                    button.textContent = 'Confirm in MetaMask...';
+                    const wagerTx = await contract.flip(choice === 'heads', {
+                        value: wagerWei,
+                        gasLimit: 250000
+                    });
+                    button.textContent = 'Waiting for chain...';
+                    await wagerTx.wait();
+                    wagerTxHash = wagerTx.hash;
+                }
+
+                button.textContent = 'Flipping...';
+                const res = await fetch('/api/coin-flips', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress, wagerAmount, choice, wagerTxHash })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Coin flip failed.');
+                }
+
+                showFlipResult(data.flip);
+                setMessage('flipMessage', 'Flip saved to MySQL.', 'success');
+                await loadFlips();
+            } catch (err) {
+                setMessage('flipMessage', err.message || 'Coin flip failed.');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Flip coin';
+            }
+        };
+
+        function showFlipResult(flip) {
+            const coinFace = document.getElementById('coinFace');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDetails = document.getElementById('resultDetails');
+            const isWin = flip.outcome === 'win';
+
+            coinFace.textContent = flip.result === 'heads' ? 'H' : 'T';
+            coinFace.className = isWin
+                ? 'coin-motion mx-auto grid h-44 w-44 place-items-center rounded-full border-8 border-emerald-200 bg-emerald-300 text-6xl font-black text-slate-950 shadow-2xl shadow-emerald-500/20'
+                : 'coin-motion mx-auto grid h-44 w-44 place-items-center rounded-full border-8 border-red-200 bg-red-300 text-6xl font-black text-slate-950 shadow-2xl shadow-red-500/20';
+
+            resultTitle.textContent = isWin ? 'Winner' : 'Loss';
+            resultDetails.textContent = `You picked ${flip.choice}, coin landed on ${flip.result}. Payout: ${coinAmount(flip.payoutAmount)}.`;
+        }
+
+        async function loadFlips() {
+            const history = document.getElementById('flipHistory');
+            try {
+                const res = await fetch('/api/coin-flips');
+                const flips = await res.json();
+
+                if (!flips || flips.length === 0) {
+                    history.innerHTML = "<p class='rounded-lg border border-slate-700 bg-slate-950/80 p-4 text-slate-500 italic'>No flips yet.</p>";
+                    updateStats([]);
+                    return;
+                }
+
+                updateStats(flips);
+                history.innerHTML = flips.map(flip => `
+                    <div class="rounded-lg border border-slate-700 bg-slate-950/80 p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-black ${flip.outcome === 'win' ? 'text-emerald-300' : 'text-red-300'}">${flip.outcome.toUpperCase()}</span>
+                            <span class="text-xs text-slate-500">${new Date(flip.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p class="mt-2 font-mono text-xs text-blue-300">${shortAddress(flip.walletAddress)}</p>
+                        <p class="mt-2 leading-6 text-slate-300">Wager ${coinAmount(flip.wagerAmount)} on ${flip.choice}; result ${flip.result}; payout ${coinAmount(flip.payoutAmount)}.</p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                history.innerHTML = "<p class='rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-red-300'>Could not load coin flips.</p>";
+            }
+        }
+
+        function updateStats(flips) {
+            const wins = flips.filter(flip => flip.outcome === 'win').length;
+            const net = flips.reduce((sum, flip) => {
+                return sum + Number(flip.payoutAmount || 0) - Number(flip.wagerAmount || 0);
+            }, 0);
+
+            document.getElementById('totalFlips').textContent = flips.length;
+            document.getElementById('totalWins').textContent = wins;
+            document.getElementById('netPayout').textContent = coinAmount(net);
+        }
+
+        document.getElementById('refreshBtn').onclick = loadFlips;
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        loadGameConfig().finally(loadFlips);
+    </script>
+</body>
+</html>

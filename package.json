@@ -1,8 +1,12 @@
 {
-  "name": "hello-world",
+  "name": "coin-flip-game",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js --network sepolia",
+    "flip": "hardhat run scripts/interact.js --network sepolia",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,9 +19,11 @@
     "hardhat": "^2.22.15"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "pg": "^8.20.0",
-    "pg-hstore": "^2.3.4",
+    "express": "^5.2.1",
+    "mysql2": "^3.9.2",
     "sequelize": "^6.37.8"
   }
 }
